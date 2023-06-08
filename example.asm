@@ -7,7 +7,7 @@ includelib msvcrt.lib
 extern exit: proc
 extern malloc: proc
 extern memset: proc
-extrn rand : near
+;extrn rand : near
 extern printf: proc
 
 includelib canvas.lib
@@ -45,10 +45,10 @@ posX DD 24, 24, 24,24
 	
 ;arr_pos_blocks DD 24,133, 242, 351 ; varianta simplificata , daca vreau elem de pe linia 2, vec[2][x] asa iau valorile
 
-arr_blocks_value DD 2,0,2,2; stocare valoarea  care se afla in casute 
-				 DD	128,256,0,0
-				 DD	0,2,2,0
-				 DD	0,4,2,2
+arr_blocks_value DD 2,0,0,0; stocare valoarea  care se afla in casute 
+				 DD	0,0,0,0
+				 DD	0,2,0,0
+				 DD	0,0,0,0
 
 				 
 counter DD 0 ; numara evenimentele de tip timer
@@ -97,27 +97,7 @@ local loop_add_blocks,print0,print2,print4,print8,print16,print32,print64,print1
 	add_line_horizontal_4px 347, 20,440,0h
 	add_line_horizontal_4px 456, 20,440,0h
 	
-	; add_square 24,24,105,105,08F807Eh; 1st row
-	; add_square 24,133,105,105,08F807Eh
-	; add_square 24,242,105,105,08F807Eh
-	; add_square 24,351,105,105,08F807Eh
 	
-	; add_square 133,24,105,105,08F807Eh;2nd row
-	; add_square 133,133,105,105,08F807Eh
-	; add_square 133,242,105,105,08F807Eh
-	; add_square 133,351,105,105,08F807Eh
-	
-	; add_square 242,24,105,105,08F807Eh;3rd row
-	; add_square 242,133,105,105,08F807Eh
-	; add_square 242,242,105,105,08F807Eh
-	; add_square 242,351,105,105,08F807Eh
-	
-	; add_square 351,24,105,105,08F807Eh;4th row
-	; add_square 351,133,105,105,08F807Eh
-	; add_square 351,242,105,105,08F807Eh
-	; add_square 351,351,105,105,08F807Eh
-	
-	;random_num_generator 3
 	
 	mov ecx,15
 loop_add_blocks:
@@ -491,6 +471,9 @@ loop_add_blocks:
 	 sub ecx,1
 	  cmp ecx,0
 		jnl loop_add_blocks
+	
+	
+	checkIfLose
 
 endm
 
@@ -524,7 +507,7 @@ loop bucla_coloana
  endm
 
 generate_element macro
-local check_if_exists, place_number,substract_4_loop,add_block,check_for_free_positions
+local check_if_exists, place_number,substract_4_loop,add_block,check_for_free_positions,give_0_edx
 	mov eax,0
 check_if_exists:
 	push eax
@@ -532,18 +515,22 @@ check_if_exists:
 	pop eax
 	inc eax
 	cmp eax, 20
-	jg check_for_free_positions
+	jg give_0_edx
 	cmp [arr_blocks_value+edx*4],0
 	je place_number
 	jne check_if_exists
-	check_for_free_positions:
+	give_0_edx:
 		mov edx,0
+	check_for_free_positions:
+		
+		
 		cmp [arr_blocks_value+edx*4],0
 		je place_number
 		add edx,4
 		cmp edx,60
 		jng check_for_free_positions
 place_number:
+	
 	mov ecx, edx ; pozitie in arr_blocks_value
 	random_num_generator 1
 	inc edx
@@ -850,30 +837,36 @@ local elements_loop,line_loop,notequal_0,equal_0,to_end
 endm
 
 checkIfLose macro; 1 in ecx daca mai sunt mutari sau pozitii libere , iar 0 in caz contrar
-local bucla_linie,bucla_coloana,to_exit_equal,check_under,to_next_element,exit
-	mov ecx, 3
+local bucla_linie,bucla_coloana,to_exit_equal,check_under,to_next_element,exit,not_last_line
+	mov ecx, 48
 	bucla_linie:
 		mov eax, 0
-		shl ecx,3
+		;shl ecx,3
 		bucla_coloana:
 			cmp [arr_blocks_value+ecx+eax],0
 			je to_exit_equal
+			
+			cmp ecx,48
+			jne check_under
+			jmp not_last_line
+			
+			check_under:
+			cmp ecx, 48
+			jge not_last_line
+			mov edx, [arr_blocks_value+ecx+eax]
+			cmp [arr_blocks_value+ecx+eax+16],edx
+			je to_exit_equal
 		
+			not_last_line:
 			cmp eax, 12
-			je check_under
+			je to_next_element
 			
 			mov edx, [arr_blocks_value+ecx+eax]
 			cmp [arr_blocks_value+ecx+eax+4],edx
 			je to_exit_equal
 			
 			
-			check_under:
-			cmp ecx, 48
-			jge to_next_element
 			
-			mov edx, [arr_blocks_value+ecx+eax]
-			cmp [arr_blocks_value+ecx+eax+16],edx
-			je to_exit_equal
 						
 				to_next_element:
 		add eax,4
@@ -881,13 +874,21 @@ local bucla_linie,bucla_coloana,to_exit_equal,check_under,to_next_element,exit
 		jle bucla_coloana
 					
 					
-	sub eax,1
-	shr ecx,3
+	sub ecx,16
+	;shr ecx,3
 	cmp ecx, 0
     jge bucla_linie
 	
 	mov ecx, 0
-	add_square 30,30,105,105,0FFh
+	add_square 170,170,140,140,0FFh
+	make_text_macro 'Y', area, 200, 230
+	make_text_macro 'O', area, 210, 230
+	make_text_macro 'U', area, 220, 230
+	;make_text_macro 'S', area, 130, 100
+	make_text_macro 'L', area, 240, 230
+	make_text_macro 'O', area, 250, 230
+	make_text_macro 'S', area, 260, 230
+	make_text_macro 'T', area, 270, 230
 	jmp exit
 	;;;;;;;;;;;;; daca e lose sa faca orice
 	to_exit_equal:
@@ -968,6 +969,7 @@ upMove:
 					shl edx,1
 					; sub eax,edx
 					mov [arr_blocks_value+eax+ecx],edx
+					add [counter],edx
 					; add eax,edx
 					mov[arr_blocks_value+eax+ecx+16],0
 					
@@ -992,8 +994,8 @@ upMove:
 		generate_element
 	
 	exit_up:
-	checkIfLose
-	mov moved,0
+	;checkIfLose
+	
 	create_table
 	
 	jmp afisare_litere
@@ -1019,6 +1021,7 @@ leftMove:
 			equal_left :
 				shl edx,1
 				mov [arr_blocks_value+ecx+eax] , edx
+				add [counter],edx
 				mov dword ptr [arr_blocks_value+ecx+eax+4],0
 				jmp to_end3
 			to_end3:
@@ -1043,7 +1046,7 @@ leftMove:
 	exit_left:
 
 	create_table
-	checkIfLose
+	;checkIfLose
 	jmp evt_click
 	
 	
@@ -1064,9 +1067,11 @@ downMove:
 				
 				equal_up5:
 					shl edx,1
-					mov [arr_blocks_value+eax+ecx],edx				
+					mov [arr_blocks_value+eax+ecx],edx	
+					add [counter],edx					
 					sub eax,16
 					mov[arr_blocks_value+eax+ecx],0
+					
 					jmp to_end5
 	
 				to_end5:
@@ -1089,9 +1094,9 @@ downMove:
 	generate_element
 	
 	exit_down:
-	
+		;checkIfLose
 	create_table
-	checkIfLose
+	
 	jmp evt_click
 
 rightMove: ; first moves all tiles, then merges 2 identical, then moves all tiles
@@ -1118,6 +1123,7 @@ rightMove: ; first moves all tiles, then merges 2 identical, then moves all tile
 				shl edx,1
 				mov [arr_blocks_value+ecx+eax] , edx
 				mov dword ptr [arr_blocks_value+ecx+eax-4],0
+				add [counter],edx
 				sub eax,4
 				jmp to_end2
 			to_end2:
@@ -1140,7 +1146,7 @@ rightMove: ; first moves all tiles, then merges 2 identical, then moves all tile
 	exit_right:
 
 	create_table
-		checkIfLose
+	;	checkIfLose
 
 	jmp afisare_litere
 evt_click:
@@ -1148,28 +1154,40 @@ evt_click:
 	jmp afisare_litere
 	
 evt_timer:
-	inc counter
+	;inc counter
 	
 afisare_litere:
 	;create_table
-	; ; afisam valoarea counter-ului curent (sute, zeci si unitati)
-	; mov ebx, 10
-	; mov eax, counter
+	; afisam valoarea counter-ului curent (sute, zeci si unitati)
+	mov ebx, 10
+	mov eax, counter
 	;cifra unitatilor
-	; mov edx, 0
-	; div ebx
-	; add edx, '0'
-	; make_text_macro edx, area, 30, 10
+	mov edx, 0
+	div ebx
+	add edx, '0'
+	make_text_macro edx, area, 560, 50
 	;cifra zecilor
-	; mov edx, 0
-	; div ebx
-	; add edx, '0'
-	; make_text_macro edx, area, 20, 10
+	mov edx, 0
+	div ebx
+	add edx, '0'
+	make_text_macro edx, area, 550, 50
 	;cifra sutelor
-	; mov edx, 0
-	; div ebx
-	; add edx, '0'
-	; make_text_macro edx, area, 10, 10
+	mov edx, 0
+	div ebx
+	add edx, '0'
+	make_text_macro edx, area, 540, 50
+	mov edx, 0
+	div ebx
+	add edx, '0'
+	make_text_macro edx, area, 530,50
+	
+	
+	
+	 make_text_macro 'S', area, 530, 30
+	 make_text_macro 'C', area, 540, 30
+	 make_text_macro 'O', area, 550, 30
+	 make_text_macro 'R', area, 560, 30
+	 make_text_macro 'E', area, 570, 30
 	
 	;scriem un mesaj
 	; make_text_macro 'P', area, 110, 100
